@@ -1,0 +1,56 @@
+name: Deploy auto_invest_AI to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to VM via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "."
+          target: ${{ secrets.SERVER_PATH }}
+          rm: false
+
+      - name: Run deployment commands on VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            echo "=== Backend: install deps + migrate ==="
+            cd ${{ secrets.SERVER_PATH }}/backend
+            source venv/bin/activate
+            pip install -r requirements-prod.txt --quiet
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
+            deactivate
+
+            echo "=== Frontend: write .env + build ==="
+            cd ${{ secrets.SERVER_PATH }}/frontend
+            echo "VITE_API_URL=https://autoinvestapi.duckdns.org" > .env
+            npm install --silent
+            npm run build
+
+            echo "=== Restart app ==="
+            pm2 restart autoinvest || pm2 start ${{ secrets.SERVER_PATH }}/deploy/rungunicorn.sh --name autoinvest
+            pm2 save
+            sudo systemctl restart nginx
+
+            echo "✅ Deployment complete!"
