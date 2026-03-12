@@ -36,12 +36,9 @@ jobs:
 
             echo "=== Backend: install deps + migrate ==="
             cd ${{ secrets.SERVER_PATH }}/backend
-            source venv/bin/activate
-            pip install -r requirements-prod.txt --quiet
-            python manage.py migrate --noinput
-            python manage.py collectstatic --noinput
-            deactivate
-
+            venv/bin/pip install -r requirements-prod.txt --quiet
+            venv/bin/python manage.py migrate --noinput
+            venv/bin/python manage.py collectstatic --noinput
             echo "=== Frontend: write .env + build ==="
             cd ${{ secrets.SERVER_PATH }}/frontend
             echo "VITE_API_URL=https://autoinvestapi.duckdns.org" > .env
