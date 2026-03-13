@@ -6,7 +6,10 @@ import yfinance as yf
 def _candidate_symbols(symbol: str) -> list[str]:
     symbol = str(symbol).strip().upper()
     candidates = [symbol]
-    if "." not in symbol:
+    # Don't append .NS for:
+    #  - symbols that already have a dot (e.g. RELIANCE.NS)
+    #  - crypto pairs that use a dash (e.g. BTC-USD, ETH-USD)
+    if "." not in symbol and "-" not in symbol:
         candidates.append(f"{symbol}.NS")
     return candidates
 

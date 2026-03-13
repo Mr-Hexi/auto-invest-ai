@@ -14,6 +14,7 @@ from portfolio.models import Stock
 def generate_and_persist_stock_analytics(stock: Stock) -> StockAnalytics:
     """
     Generate analytics for one stock and persist to StockAnalytics table.
+    Also refreshes Stock.current_price with the latest close from yfinance.
     """
     raw_df = fetch_data(stock.symbol)
     cleaned_df = clean_data(raw_df)
@@ -34,4 +35,13 @@ def generate_and_persist_stock_analytics(stock: Stock) -> StockAnalytics:
             "last_updated": timezone.now(),
         },
     )
+
+    # Keep Stock.current_price in sync with the latest close price
+    # so the frontend always shows a consistent value without live fetches
+    if cleaned_df:
+        latest_close = round(float(cleaned_df[-1]["close"]), 2)
+        if stock.current_price != latest_close:
+            stock.current_price = latest_close
+            stock.save(update_fields=["current_price"])
+
     return analytics
