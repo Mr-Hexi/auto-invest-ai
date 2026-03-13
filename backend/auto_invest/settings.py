@@ -133,3 +133,4 @@ CORS_ALLOWED_ORIGINS_ENV = os.environ.get(
     "http://localhost:5173 http://127.0.0.1:5173"
 )
 CORS_ALLOWED_ORIGINS = CORS_ALLOWED_ORIGINS_ENV.split()
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False") == "True"
